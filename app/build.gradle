@@ -3,13 +3,13 @@ apply plugin: 'com.android.application'
 android {
     signingConfigs {
         release {
-            storeFile file('/Users/menglk/Documents/RefreshView/refresh.jks')
+            storeFile file('../refresh.jks')
             storePassword '123456'
             keyAlias = 'refresh'
             keyPassword '123456'
         }
         debug {
-            storeFile file('/Users/menglk/Documents/RefreshView/refresh.jks')
+            storeFile file('../refresh.jks')
             storePassword '123456'
             keyPassword '123456'
             keyAlias = 'refresh'
