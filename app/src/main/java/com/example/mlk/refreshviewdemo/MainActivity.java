@@ -15,7 +15,6 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity {
 
     private RefreshRecy refreshRecy;
-    private List<String> data = new ArrayList<>();
     private MyAdapter adapter;
     private PageInfo pageInfo = new PageInfo();
 
@@ -26,9 +25,7 @@ public class MainActivity extends AppCompatActivity {
         refreshRecy = (RefreshRecy) findViewById(R.id.recyclerView);
         refreshRecy.setLinearLayoutManager(LinearLayout.VERTICAL);
 
-        initData();
-
-        adapter = new MyAdapter(R.layout.item_recy, data);
+        adapter = new MyAdapter(R.layout.item_recy, null);
         refreshRecy.setAdapter(adapter);
 
         refreshRecy.setOnRefreshListener(new RefreshRecy.onRefreshListener() {
@@ -36,28 +33,28 @@ public class MainActivity extends AppCompatActivity {
             public void onRefresh() {
                 List<String> newList = new ArrayList();
                 for (int i = 0; i < 20; i++) {
-                    newList.add("标题"+(data.size()+i));
+                    newList.add("标题"+i);
                 }
 
-                refreshRecy.downRefreshData(data,newList);
+                refreshRecy.downRefreshData(newList);
             }
 
             @Override
             public void onLoadMore() {
                 List<String> newList = new ArrayList();
-                for (int i = 0; i < 10; i++) {
-                    newList.add("标题"+(data.size()+i));
+                if(adapter.getData().size()> 30){
+                    refreshRecy.loadMoreData(newList);
+                    return;
                 }
-                refreshRecy.loadMoreData(data,newList);
+                for (int i = 0; i < 10; i++) {
+                    newList.add("标题"+(adapter.getData().size()+i));
+                }
+                refreshRecy.loadMoreData(newList);
             }
         },20);
+//        refreshRecy.closeLoadMord();
     }
 
-    private void initData() {
-        for (int i = 0; i < 20; i++) {
-            data.add("标题"+i);
-        }
-    }
 
     class MyAdapter extends BaseQuickAdapter<String,BaseViewHolder>{
 

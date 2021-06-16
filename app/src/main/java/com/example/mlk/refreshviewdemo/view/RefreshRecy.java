@@ -4,16 +4,19 @@ import android.content.Context;
 import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.StaggeredGridLayoutManager;
 import android.util.AttributeSet;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.FrameLayout;
 
 import com.chad.library.adapter.base.BaseQuickAdapter;
 import com.example.mlk.refreshviewdemo.R;
+import com.example.mlk.refreshviewdemo.loadmore.CustomLoadMoreView;
 
 import java.util.List;
 
@@ -27,12 +30,13 @@ import in.srain.cube.views.ptr.PtrHandler;
  */
 public class RefreshRecy extends FrameLayout {
 
-    private PtrFrameLayout ptrFrameLayout;
+    private SwipeRefreshLayout swipeRefreshLayout;
     private RecyclerView recyclerView;
     private BaseQuickAdapter adapter;
     private Handler handler = new Handler();
     private int pageSize;
     private boolean isLoadMore;
+    private View empytView;
 
     public RefreshRecy(@NonNull Context context) {
         this(context,null);
@@ -49,14 +53,18 @@ public class RefreshRecy extends FrameLayout {
 
     private void init(Context context){
         View view = View.inflate(context, R.layout.refresh_recy, null);
-        ptrFrameLayout = view.findViewById(R.id.ptrFramelayout);
+        swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout);
+        swipeRefreshLayout.setColorSchemeResources(R.color.blue,R.color.red);
         recyclerView = view.findViewById(R.id.recyclerView);
-        ptrFrameLayout.setEnabled(false);//默认不开启下拉刷新
+        empytView = LayoutInflater.from(context).inflate(R.layout.empty_layout, null);
         addView(view);
     }
 
     public void setAdapter(BaseQuickAdapter adapter){
         recyclerView.setAdapter(adapter);
+        adapter.setLoadMoreView(new CustomLoadMoreView());
+        //设置empty view
+        adapter.setEmptyView(empytView);
         this.adapter = adapter;
     }
 
@@ -65,40 +73,22 @@ public class RefreshRecy extends FrameLayout {
     }
 
     private void initRefreshHead() {
-        // header
-//        final StoreHouseHeader header = new StoreHouseHeader(getContext());
-//        header.setPadding(0, 30, 0, 30);
-//        header.initWithString("Alibaba");
-//        header.setTextColor(R.color.colorAccent);
-//        ptrFrameLayout.addPtrUIHandler(header);
-//        ptrFrameLayout.setHeaderView(header);
-
-        PtrClassicDefaultHeader header = new PtrClassicDefaultHeader(getContext());
-        ptrFrameLayout.addPtrUIHandler(header);
-        ptrFrameLayout.setHeaderView(header);
-        ptrFrameLayout.setEnabled(true);
     }
 
     private void initListener() {
         //下拉刷新
-        ptrFrameLayout.setPtrHandler(new PtrHandler() {
+        swipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
-            public void onRefreshBegin(PtrFrameLayout frame) {
-                frame.postDelayed(new Runnable() {
+            public void onRefresh() {
+                new Handler().postDelayed(new Runnable() {
                     @Override
                     public void run() {
                         if(onRefreshListener != null){
                             onRefreshListener.onRefresh();
                         }
-                        ptrFrameLayout.refreshComplete();
+                        swipeRefreshLayout.setRefreshing(false);
                     }
-                }, 1800);
-            }
-
-            @Override
-            public boolean checkCanDoRefresh(PtrFrameLayout frame, View content, View header) {
-                // 默认实现，根据实际情况做改动
-                return PtrDefaultHandler.checkContentCanBePulledDown(frame, content, header);
+                },1800);
             }
         });
 
@@ -131,30 +121,43 @@ public class RefreshRecy extends FrameLayout {
         recyclerView.setLayoutManager(new StaggeredGridLayoutManager(spanCount,orientation));
     }
 
+    /**
+     *关闭上啦加载功能
+     */
     public void closeLoadMord(){
         if(adapter != null) adapter.setOnLoadMoreListener(null,recyclerView);
     }
 
-    public void loadMoreData(List data,List newList){
+    /**
+     * 加载更多数据
+     * @param newList
+     */
+    public void loadMoreData(List newList){
         if(newList == null || newList.size() <= 0){
             adapter.notifyDataSetChanged();
             adapter.loadMoreEnd();
             isLoadMore = false;
             return;
         }
+        if(newList.size() < pageSize){
+            adapter.addData(newList);
+            adapter.loadMoreEnd();
+            isLoadMore = false;
+            return;
+        }
         isLoadMore = true;
-        data.addAll(newList);
-        adapter.notifyDataSetChanged();
+        adapter.addData(newList);
         adapter.loadMoreComplete();
     }
 
-    public void downRefreshData(List data,List newList){
+    /**
+     * 下拉刷新数据
+     * @param newList
+     */
+    public void downRefreshData(List newList){
         isLoadMore = true;
-        data.clear();
         if(newList != null || newList.size() > 0){
-            data.addAll(newList);
-//            adapter.loadMoreComplete();
-            adapter.notifyDataSetChanged();
+            adapter.setNewData(newList);
         }
     }
 
